@@ -6,7 +6,7 @@ pub async fn run_comfy_main_async(mut game: impl GameLoop + 'static) {
     let _tracy = maybe_setup_tracy();
 
     #[cfg(not(target_arch = "wasm32"))]
-    let target_framerate = 60;
+    let target_framerate = 5000;
 
     #[cfg(not(target_arch = "wasm32"))]
     let mut loop_helper = spin_sleep::LoopHelper::builder()

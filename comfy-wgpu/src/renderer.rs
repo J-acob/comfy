@@ -198,7 +198,7 @@ impl WgpuRenderer {
             format: monitor_surface_format,
             width: size.width,
             height: size.height,
-            present_mode: caps.present_modes[0],
+            present_mode: wgpu_types::PresentMode::AutoNoVsync,
             alpha_mode: caps.alpha_modes[0],
             view_formats: vec![],
         };
