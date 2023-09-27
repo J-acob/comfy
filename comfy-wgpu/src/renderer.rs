@@ -3,6 +3,7 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use crate::*;
 
 use image::Rgba;
+use wgpu_types::PresentMode;
 use winit::{dpi::PhysicalSize, window::Window};
 
 pub type PipelineMap = HashMap<String, wgpu::RenderPipeline>;
@@ -110,7 +111,7 @@ pub struct WgpuRenderer {
 }
 
 impl WgpuRenderer {
-    pub async fn new(window: Window, egui_winit: egui_winit::State) -> Self {
+    pub async fn new(window: Window, egui_winit: egui_winit::State, present_mode: PresentMode) -> Self {
         let size = window.inner_size();
 
         let instance = wgpu::Instance::default();
@@ -198,7 +199,7 @@ impl WgpuRenderer {
             format: monitor_surface_format,
             width: size.width,
             height: size.height,
-            present_mode: wgpu_types::PresentMode::AutoNoVsync,
+            present_mode: present_mode,
             alpha_mode: caps.alpha_modes[0],
             view_formats: vec![],
         };

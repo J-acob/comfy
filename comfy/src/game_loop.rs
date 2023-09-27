@@ -5,8 +5,10 @@ use crate::*;
 pub async fn run_comfy_main_async(mut game: impl GameLoop + 'static) {
     let _tracy = maybe_setup_tracy();
 
+    let render_config = game.engine().config.get_mut().render_config;
+
     #[cfg(not(target_arch = "wasm32"))]
-    let target_framerate = 5000;
+    let target_framerate = render_config.target_framerate;
 
     #[cfg(not(target_arch = "wasm32"))]
     let mut loop_helper = spin_sleep::LoopHelper::builder()
@@ -59,7 +61,7 @@ pub async fn run_comfy_main_async(mut game: impl GameLoop + 'static) {
 
     let mut delta = 1.0 / 60.0;
 
-    let renderer = WgpuRenderer::new(window, egui_winit).await;
+    let renderer = WgpuRenderer::new(window, egui_winit, render_config.present_mode).await;
     game.engine().texture_creator = Some(renderer.texture_creator.clone());
     game.engine().renderer = Some(renderer);
 

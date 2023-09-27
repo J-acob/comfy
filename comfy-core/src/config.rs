@@ -24,6 +24,90 @@ impl ResolutionConfig {
     }
 }
 
+/// Behavior of the presentation engine based on frame rate.
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "trace", derive(Serialize))]
+#[cfg_attr(feature = "replay", derive(Deserialize))]
+pub enum PresentMode {
+    /// Chooses FifoRelaxed -> Fifo based on availability.
+    ///
+    /// Because of the fallback behavior, it is supported everywhere.
+    AutoVsync = 0,
+    /// Chooses Immediate -> Mailbox -> Fifo (on web) based on availability.
+    ///
+    /// Because of the fallback behavior, it is supported everywhere.
+    AutoNoVsync = 1,
+    /// Presentation frames are kept in a First-In-First-Out queue approximately 3 frames
+    /// long. Every vertical blanking period, the presentation engine will pop a frame
+    /// off the queue to display. If there is no frame to display, it will present the same
+    /// frame again until the next vblank.
+    ///
+    /// When a present command is executed on the gpu, the presented image is added on the queue.
+    ///
+    /// No tearing will be observed.
+    ///
+    /// Calls to get_current_texture will block until there is a spot in the queue.
+    ///
+    /// Supported on all platforms.
+    ///
+    /// If you don't know what mode to choose, choose this mode. This is traditionally called "Vsync On".
+    #[default]
+    Fifo = 2,
+    /// Presentation frames are kept in a First-In-First-Out queue approximately 3 frames
+    /// long. Every vertical blanking period, the presentation engine will pop a frame
+    /// off the queue to display. If there is no frame to display, it will present the
+    /// same frame until there is a frame in the queue. The moment there is a frame in the
+    /// queue, it will immediately pop the frame off the queue.
+    ///
+    /// When a present command is executed on the gpu, the presented image is added on the queue.
+    ///
+    /// Tearing will be observed if frames last more than one vblank as the front buffer.
+    ///
+    /// Calls to get_current_texture will block until there is a spot in the queue.
+    ///
+    /// Supported on AMD on Vulkan.
+    ///
+    /// This is traditionally called "Adaptive Vsync"
+    FifoRelaxed = 3,
+    /// Presentation frames are not queued at all. The moment a present command
+    /// is executed on the GPU, the presented image is swapped onto the front buffer
+    /// immediately.
+    ///
+    /// Tearing can be observed.
+    ///
+    /// Supported on most platforms except older DX12 and Wayland.
+    ///
+    /// This is traditionally called "Vsync Off".
+    Immediate = 4,
+    /// Presentation frames are kept in a single-frame queue. Every vertical blanking period,
+    /// the presentation engine will pop a frame from the queue. If there is no frame to display,
+    /// it will present the same frame again until the next vblank.
+    ///
+    /// When a present command is executed on the gpu, the frame will be put into the queue.
+    /// If there was already a frame in the queue, the new frame will _replace_ the old frame
+    /// on the queue.
+    ///
+    /// No tearing will be observed.
+    ///
+    /// Supported on DX11/12 on Windows 10, NVidia on Vulkan and Wayland on Vulkan.
+    ///
+    /// This is traditionally called "Fast Vsync"
+    Mailbox = 5,
+}
+
+#[derie(Copy, Clone, Debug)]
+pub struct RenderConfig {
+    target_framerate: f32,
+    present_mode: PresentMode,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub struct RenderConfig {
+    pub target_framerate: f32,
+    pub present_mode: i32, 
+}
+
 #[derive(Copy, Clone, Debug)]
 pub struct GameConfig {
     pub game_name: &'static str,
@@ -45,6 +129,8 @@ pub struct GameConfig {
 
     pub show_combat_text: bool,
     pub spawn_exp: bool,
+
+    pub render_config: RenderConfig,
 }
 
 impl Default for GameConfig {
@@ -73,6 +159,7 @@ impl Default for GameConfig {
 
             show_combat_text: true,
             spawn_exp: true,
+            render_config: RenderConfig { target_framerate: 60., present_mode: PresentMode::AutoNoVsync }
         }
     }
 }
