@@ -45,6 +45,8 @@ pub struct GameConfig {
 
     pub show_combat_text: bool,
     pub spawn_exp: bool,
+
+    pub fixed_dt: f32,
 }
 
 impl Default for GameConfig {
@@ -73,6 +75,7 @@ impl Default for GameConfig {
 
             show_combat_text: true,
             spawn_exp: true,
+            fixed_dt: 1. / 240.,
         }
     }
 }

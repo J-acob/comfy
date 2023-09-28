@@ -59,6 +59,9 @@ pub async fn run_comfy_main_async(mut game: impl GameLoop + 'static) {
 
     let mut delta = 1.0 / 60.0;
 
+    // Set the dt for fixed timestepping
+    let fixed_dt = game.engine().config.borrow().fixed_dt;
+
     let renderer = WgpuRenderer::new(window, egui_winit).await;
     game.engine().texture_creator = Some(renderer.texture_creator.clone());
     game.engine().renderer = Some(renderer);
@@ -66,6 +69,17 @@ pub async fn run_comfy_main_async(mut game: impl GameLoop + 'static) {
     event_loop.run(move |event, _, control_flow| {
         match event {
             Event::MainEventsCleared => {
+                // Do fixed update stuff
+                let current = get_time() as f32;
+                let elapsed = current - game.engine().previous_time;
+                game.engine().previous_time = current;
+                game.engine().accumulator += elapsed;
+
+                while game.engine().accumulator >= fixed_dt {
+                    game.fixed_update();
+                    game.engine().accumulator -= fixed_dt;
+                }
+
                 let _span = span!("frame with vsync");
                 #[cfg(not(target_arch = "wasm32"))]
                 let _ = loop_helper.loop_start();

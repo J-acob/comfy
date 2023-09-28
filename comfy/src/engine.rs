@@ -6,6 +6,7 @@ pub trait GameLoop {
     fn performance_metrics(&self, _world: &mut World, _ui: &mut egui::Ui) {}
     fn engine(&mut self) -> &mut EngineState;
     fn update(&mut self);
+    fn fixed_update(&mut self);
 }
 
 pub type GameLoopBuilder = Box<dyn Fn() -> Arc<Mutex<dyn GameLoop>>>;
@@ -45,6 +46,10 @@ pub struct EngineState {
     pub quit_flag: bool,
 
     pub to_despawn: RefCell<Vec<Entity>>,
+
+    // Fixed update stuff
+    pub accumulator: f32,
+    pub previous_time: f32,
 }
 
 impl EngineState {
@@ -111,6 +116,9 @@ impl EngineState {
             quit_flag: false,
 
             to_despawn: RefCell::new(vec![]),
+            // Fixed timestep stuff
+            accumulator: 0.0,
+            previous_time: get_time() as f32,
         }
     }
 

@@ -3,7 +3,9 @@ macro_rules! define_main {
     ($name:literal, $game:ident $(,)?) => {
         #[inline]
         #[doc(hidden)]
-        pub fn _comfy_default_config(config: $crate::GameConfig) -> $crate::GameConfig {
+        pub fn _comfy_default_config(
+            config: $crate::GameConfig,
+        ) -> $crate::GameConfig {
             config
         }
 
@@ -45,7 +47,7 @@ macro_rules! define_main {
 
 #[macro_export]
 macro_rules! simple_game {
-    ($name:literal, $state:ident, $config:ident, $setup:ident, $update:ident $(,)?) => {
+    ($name:literal, $state:ident, $config:ident, $setup:ident, $update:ident, $fixed_update:ident $(,)?) => {
         pub struct ComfyGameContext<'a, 'b> {
             state: &'a mut $state,
             engine: &'a mut $crate::EngineContext<'b>,
@@ -73,6 +75,12 @@ macro_rules! simple_game {
             $update(context.state, context.engine)
         }
 
+        #[inline]
+        #[doc(hidden)]
+        fn _comfy_fixed_update_context(context: &mut ComfyGameContext<'_, '_>) {
+            $fixed_update(context.state, context.engine)
+        }
+
         $crate::comfy_game! {
             $name,
             ComfyGameContext,
@@ -81,13 +89,16 @@ macro_rules! simple_game {
             $config,
             _comfy_setup_context,
             _comfy_update_context,
+            _comfy_fixed_update_context,
         }
     };
 
-    ($name:literal, $state:ident, $setup:ident, $update:ident $(,)?) => {
+    ($name:literal, $state:ident, $setup:ident, $update:ident, $fixed_update:ident $(,)?) => {
         #[inline]
         #[doc(hidden)]
-        pub fn _comfy_default_config(config: $crate::GameConfig) -> $crate::GameConfig {
+        pub fn _comfy_default_config(
+            config: $crate::GameConfig,
+        ) -> $crate::GameConfig {
             config
         }
 
@@ -97,6 +108,7 @@ macro_rules! simple_game {
             _comfy_default_config,
             $setup,
             $update,
+            $fixed_update,
         }
     };
 
@@ -147,13 +159,13 @@ macro_rules! simple_game {
         ) {
         }
 
-        simple_game!($name, _comfy_setup_empty_context, $update);
+        simple_game!($name, _comfy_setup_empty_context, $update, $fixed_update);
     };
 }
 
 #[macro_export]
 macro_rules! comfy_game {
-    ($name:literal, $context:ident, $state:ident, $make_context:ident, $config:ident, $setup:ident, $update:ident $(,)?) => {
+    ($name:literal, $context:ident, $state:ident, $make_context:ident, $config:ident, $setup:ident, $update:ident, $fixed_update:ident $(,)?) => {
         $crate::define_main!($name, ComfyGame, $config);
 
         pub struct ComfyGame {
@@ -191,6 +203,24 @@ macro_rules! comfy_game {
                 $crate::run_late_update_stages(&mut c);
             }
 
+            fn fixed_update(&mut self) {
+                let mut c = self.engine.make_context();
+
+                let mut game_c: $context = match self.state.as_mut() {
+                    Some(state) => $make_context(state, &mut c),
+                    None => {
+                        let state: $state = $state::new(&mut c);
+                        let state = self.state.insert(state);
+                        let mut game_c = $make_context(state, &mut c);
+                        $setup(&mut game_c);
+                        game_c
+                    }
+                };
+
+                //$crate::run_fixed_update_stages(&mut self.c);
+                $fixed_update(&mut game_c);
+            }
+
             #[inline]
             #[must_use]
             fn engine(&mut self) -> &mut $crate::EngineState {
@@ -199,10 +229,12 @@ macro_rules! comfy_game {
         }
     };
 
-    ($name:literal, $context:ident, $state:ident, $make_context:ident, $setup:ident, $update:ident $(,)?) => {
+    ($name:literal, $context:ident, $state:ident, $make_context:ident, $setup:ident, $update:ident, $fixed_update:ident $(,)?) => {
         #[inline]
         #[doc(hidden)]
-        pub fn _comfy_default_config(config: $crate::GameConfig) -> $crate::GameConfig {
+        pub fn _comfy_default_config(
+            config: $crate::GameConfig,
+        ) -> $crate::GameConfig {
             config
         }
 
@@ -214,6 +246,7 @@ macro_rules! comfy_game {
             _comfy_default_config,
             $setup,
             $update,
+            $fixed_update,
         }
     };
 }
